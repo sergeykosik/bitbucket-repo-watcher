@@ -1,0 +1,29 @@
+{
+  "name": "bitbucket-repo-watcher",
+  "version": "1.0.0",
+  "description": "bitbucket repo watcher",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Havrl/bitbucket-repo-watcher.git"
+  },
+  "keywords": [
+    "bitbucket",
+    "api",
+    "watcher",
+    "notify"
+  ],
+  "author": "Sergey Kosik",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Havrl/bitbucket-repo-watcher/issues"
+  },
+  "homepage": "https://github.com/Havrl/bitbucket-repo-watcher#readme",
+  "dependencies": {
+    "npm": "^6.7.0",
+    "request": "^2.88.0"
+  }
+}
