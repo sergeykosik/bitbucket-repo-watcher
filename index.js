@@ -3,6 +3,7 @@ const moment = require('moment');
 const request = require('request');
 const Bluebird = require('bluebird');
 const rp = require('request-promise');
+const nodemailer = require("nodemailer");
 
 // https://medium.com/the-node-js-collection/making-your-node-js-work-everywhere-with-environment-variables-2da8cdf6e786
 const dotenv = require('dotenv');
@@ -21,7 +22,7 @@ var authObj = {
 /////////////////////////////////////////////
 // '3671a93f7af9d1f51aecc06933da25a1899aee47'  -- one file
 // sergey: 'e224e15', '90da35e'; 
-let commitHash = '8f349818c99d1968f3e9ae690089e99b8a6f42f9';
+let commitHash = 'e224e15'; //'8f349818c99d1968f3e9ae690089e99b8a6f42f9';
 
 // listCommits();
 // showDiff(commitHash);
@@ -67,9 +68,15 @@ function showDiffStat(hash) {
       var changed = diff.old || diff.new;
       paths.push(changed.path);
       console.log('paths', paths);
-    })
+    });
 
-    console.log('is SPA changed', isTargetProjectChanged(paths));
+    const isChanged =  isTargetProjectChanged(paths);
+
+    console.log('is SPA changed', isChanged);
+
+    if(isChanged) {
+      sendEmail(paths).catch(console.error);
+    }
 
   })
   .catch(function (err) {
@@ -113,6 +120,44 @@ function isTargetProjectChanged(changes) {
   });
 
   return changed;
+}
+
+function buildEmailContent(paths) {
+  let rows = '';
+  _.each(paths, path => {
+    rows += `<tr><td>${path}</td></tr>`;
+  });
+
+  return `<table>${rows}</table>`;
+}
+
+async function sendEmail(paths) {
+// Generate test SMTP service account from ethereal.email
+  // Only needed if you don't have a real mail account for testing
+  // let account = await nodemailer.createTestAccount();
+
+  // create reusable transporter object using the default SMTP transport
+  let transporter = nodemailer.createTransport({
+    service: process.env.EMAIL_PROVIDER,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    }
+  });
+
+  // setup email data with unicode symbols
+  let mailOptions = {
+    from: `"Bitbucket Notifier" <${process.env.EMAIL_FROM}>`, // sender address
+    to: process.env.EMAIL_TO, // list of receivers
+    subject: "Docurec repo changes", // Subject line
+    text: "", // plain text body
+    html: "<b>List of modified files:</b><br />" + buildEmailContent(paths) // html body
+  };
+
+  // send mail with defined transport object
+  let info = await transporter.sendMail(mailOptions)
+
+  console.log("Message sent: %s", info.messageId);
 }
 
 
