@@ -3,34 +3,34 @@ const moment = require('moment');
 const request = require('request');
 const Bluebird = require('bluebird');
 const rp = require('request-promise');
-const nodemailer = require("nodemailer");
+const nodemailer = require('nodemailer');
+const config = require('./config');
 
-// https://medium.com/the-node-js-collection/making-your-node-js-work-everywhere-with-environment-variables-2da8cdf6e786
-const dotenv = require('dotenv');
-dotenv.config();
+const commitsUrl = config.bbRepoUrl + 'commits/?page=';
+const diffStatUrl = config.bbRepoUrl + 'diffstat/';
+const diffUrl = config.bbRepoUrl + 'diff/';
 
-const commitsUrl = 'https://api.bitbucket.org/2.0/repositories/ocrex/ocrex.desktop.docurec-v2/commits/?page=';
-const diffStatUrl = 'https://api.bitbucket.org/2.0/repositories/ocrex/ocrex.desktop.docurec-v2/diffstat/';
-const diffUrl = 'https://api.bitbucket.org/2.0/repositories/ocrex/ocrex.desktop.docurec-v2/diff/';
+let changedCommits = [];
 
 var authObj = { 
-  'user': process.env.BITBUCKET_USER,
-  'pass': process.env.BITBUCKET_PASS,
+  'user': config.bbUser,
+  'pass': config.bbPass,
   'sendImmediately': true
 };
 
-/////////////////////////////////////////////
+// console.log('config.watchList', config.watchList);
+
 // '3671a93f7af9d1f51aecc06933da25a1899aee47'  -- one file
 // sergey: 'e224e15', '90da35e'; 
-let commitHash = 'e224e15'; //'8f349818c99d1968f3e9ae690089e99b8a6f42f9';
+// let commitHash = 'e224e15'; //'8f349818c99d1968f3e9ae690089e99b8a6f42f9';
 
-// listCommits();
+listCommits();
 // showDiff(commitHash);
-showDiffStat(commitHash);
+// showDiffStat(commitHash);
 
-
-
-
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
 
 function listCommits() {
   // Make 4 paged requests which would return 4*30 commits, which should cover about 2 days
@@ -43,19 +43,29 @@ function listCommits() {
       .spread(function (res1, res2, res3, res4) {
           var commits = _.concat(res1.values, res2.values, res3.values, res4.values);
 
-          // console.log('commits count', commits[0]);
-          parseCommits(commits);
+          const mapped = mapCommits(commits);
+          checkCommits(mapped);
+
+          // TODO: sendNotification should be called only after all getDiffStat completed.
+          sendNotification();
       })
       .catch(function (err) {
         console.log('Get commits failed', err);
       });
 }
 
-function showDiffStat(hash) {
-  var difReq = rp({ url:diffStatUrl+hash, method: 'GET', auth: authObj, json: true });
+function checkCommits(commits) {
+  for (let i = 0; i < commits.length; i++) {
+    _.delay(getDiffStat, 500, commits[i]);
+  }
+}
+  
+
+function getDiffStat(commit) {
+  var difReq = rp({ url:diffStatUrl + commit.hash, method: 'GET', auth: authObj, json: true });
   
   difReq.then(function (res) {
-    console.log('Dif', res);
+    // console.log('Dif', res);
 
     const paths = [];
     const diffs = res.values || [];
@@ -67,20 +77,19 @@ function showDiffStat(hash) {
       // or new (added)
       var changed = diff.old || diff.new;
       paths.push(changed.path);
-      console.log('paths', paths);
+      // console.log('paths', paths);
     });
 
-    const isChanged =  isTargetProjectChanged(paths);
-
-    console.log('is SPA changed', isChanged);
+    const isChanged = isAnyWachedChanged(paths);
 
     if(isChanged) {
-      sendEmail(paths).catch(console.error);
+      commit.paths = paths;
+      changedCommits.push(commit);
     }
 
   })
   .catch(function (err) {
-    console.log('showDiffStat error', err);
+    console.log('getDiffStat error', err);
   });
 }
 
@@ -95,34 +104,72 @@ function showDiff(hash) {
   });
 }
 
-function parseCommits(data) {
+function mapCommits(data) {
    
+  let comparedDate = moment();
+
    var filtered = _.filter(data, commit => {
-    return moment(commit.date).isAfter('2019-01-24', 'day');
+    // return moment(commit.date).isAfter('2019-01-24', 'day');
+    return moment(commit.date).isSame(comparedDate, 'date');
    });
    
    var arr = _.map(filtered, commit => {
-     return { id: commit.hash, author: commit.author.raw, date: moment(commit.date).format('LL') };
+     return { 
+       hash: commit.hash, 
+       message: commit.message,
+       author: commit.author.raw, 
+       date: moment(commit.date).format('LLL') };
    });
 
-   console.log('commits', arr);
-   console.log('filtered count', arr.length);
+   // console.log('commits', arr);
+   // console.log('filtered count', arr.length);
+
+   return arr;
 }
 
-function isTargetProjectChanged(changes) {
-  var targetProject = 'OCrex.Web.DocuRec.Spa';
-  var changed = false; 
-  _.each(changes, path => {
-    if (path.indexOf(targetProject) > -1) {
-      changed = true;
+function isAnyWachedChanged(paths) {
+  let found = false;
+
+  _.each(paths, path => {
+    found = config.watchList.some(interested => path.indexOf(interested) > -1);
+    if(found) {
       return;
     }
-  });
-
-  return changed;
+  }); ;
+  console.log('isAnyWatchedChanged', found);
+  return found;
 }
 
-function buildEmailContent(paths) {
+function sendNotification() {
+  if (changedCommits.length === 0) {
+    return;
+  }
+  
+  let content = '';
+  _.each(changedCommits, changed => {
+    content += buildCommitContent(changed);
+    content += '<hr>';
+  });
+
+  console.log('email content', content);
+  
+  sendEmail(content).catch(console.error);
+}
+  
+function buildCommitContent(commit) {
+  let content = `
+  <h4>Commit: ${commit.hash}</h4>
+  <h4>Author: ${commit.author}</h4>
+  <h4>Date: ${commit.date}</h4>
+  <h4>Message:</h4>
+  <p>${commit.message}</p>
+  ${buildPathsContent(commit.paths)}
+  `;
+
+  return content;
+}
+
+function buildPathsContent(paths) {
   let rows = '';
   _.each(paths, path => {
     rows += `<tr><td>${path}</td></tr>`;
@@ -138,17 +185,17 @@ async function sendEmail(paths) {
 
   // create reusable transporter object using the default SMTP transport
   let transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_PROVIDER,
+    service: config.emailProvider,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+      user: config.emailUser,
+      pass: config.emailPass
     }
   });
 
   // setup email data with unicode symbols
   let mailOptions = {
-    from: `"Bitbucket Notifier" <${process.env.EMAIL_FROM}>`, // sender address
-    to: process.env.EMAIL_TO, // list of receivers
+    from: `"Bitbucket Notifier" <${config.emailFrom}>`, // sender address
+    to: config.emailTo, // list of receivers
     subject: "Docurec repo changes", // Subject line
     text: "", // plain text body
     html: "<b>List of modified files:</b><br />" + buildEmailContent(paths) // html body
