@@ -4,7 +4,9 @@
   "description": "bitbucket repo watcher",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "install-win-service": "winser -i",
+    "uninstall-win-service": "winser -r"
   },
   "repository": {
     "type": "git",
@@ -26,9 +28,11 @@
     "dotenv": "^6.2.0",
     "lodash": "^4.17.11",
     "moment": "^2.24.0",
+    "node-schedule": "^1.3.1",
     "nodemailer": "^5.1.1",
     "npm": "^6.7.0",
     "request": "^2.88.0",
-    "request-promise": "^4.2.2"
+    "request-promise": "^4.2.2",
+    "winser": "^1.0.3"
   }
 }

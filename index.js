@@ -4,6 +4,7 @@ const request = require('request');
 const Bluebird = require('bluebird');
 const rp = require('request-promise');
 const nodemailer = require('nodemailer');
+const schedule = require('node-schedule');
 const config = require('./config');
 
 const commitsUrl = config.bbRepoUrl + 'commits/?page=';
@@ -18,13 +19,16 @@ var authObj = {
   sendImmediately: true
 };
 
-// console.log('config.watchList', config.watchList);
+console.log(`Scheduled for ${13.00}`);
 
-// '3671a93f7af9d1f51aecc06933da25a1899aee47'  -- one file
-// sergey: 'e224e15', '90da35e';
-// let commitHash = 'e224e15'; //'8f349818c99d1968f3e9ae690089e99b8a6f42f9';
+var jobRule = new schedule.RecurrenceRule();
+jobRule.hour = 13;
+jobRule.minute = 40;
+var job = schedule.scheduleJob(jobRule, function(){
+  checkRepo();
+});
 
-listCommits();
+
 // showDiff(commitHash);
 // showDiffStat(commitHash);
 
@@ -32,7 +36,7 @@ listCommits();
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 
-function listCommits() {
+function checkRepo() {
   // Make 4 paged requests which would return 4*30 commits, which should cover about 2 days
   var request1 = rp({ url: commitsUrl + '1', method: 'GET', auth: authObj, json: true });
   var request2 = rp({ url: commitsUrl + '2', method: 'GET', auth: authObj, json: true });
@@ -158,6 +162,8 @@ function sendNotification() {
     content += '<hr>';
   });
 
+  content += `<h5>Sent by Bitbucket-Repo-Notifier | ${moment().format('LLL')}</h5>`;
+
   console.log('email content', content);
 
   sendEmail(content).catch(console.error);
@@ -173,8 +179,6 @@ function buildCommitContent(commit) {
   <b>Changes:</b><br/>
   ${buildPathsContent(commit.paths)}
   <br/>
-  <hr>
-  <h5>Sent by Bitbucket-Repo-Notifier</h5>
   `;
 
   return content;
