@@ -19,12 +19,17 @@ var authObj = {
   sendImmediately: true
 };
 
-console.log(`Scheduled for ${13.00}`);
+var scheduleDate = parseScheduleDate(config.scheduleDate);
 
-var jobRule = new schedule.RecurrenceRule();
-jobRule.hour = 13;
-jobRule.minute = 40;
-var job = schedule.scheduleJob(jobRule, function(){
+if(_.isEmpty(scheduleDate)) {
+  console.log(`Error -> Scheduler Date is Emtpy.`);
+  return;
+}
+
+console.log(`Scheduled for ${config.scheduleDate}`);
+console.log('Watch list', config.watchList);
+
+var job = schedule.scheduleJob(scheduleDate, function(){
   checkRepo();
 });
 
@@ -35,6 +40,21 @@ var job = schedule.scheduleJob(jobRule, function(){
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////
+
+function parseScheduleDate(val) {
+  if(!val) {
+    console.log('parseScheduleDate value is empty');
+    return null;
+  }
+
+  var dateObj = {};
+  var parts = val.split(',') || [];
+  _.each(parts, part => {
+    var prop = part.split(':');
+    dateObj[prop[0]] = Number(prop[1]);
+  })
+  return dateObj;
+}
 
 function checkRepo() {
   // Make 4 paged requests which would return 4*30 commits, which should cover about 2 days
@@ -47,7 +67,7 @@ function checkRepo() {
     .spread(function(res1, res2, res3, res4) {
       var commits = _.concat(res1.values, res2.values, res3.values, res4.values);
 
-      const mapped = mapCommits(commits);
+      const mapped = filterCommits(commits);
       console.log('commits num: ', mapped.length);
       checkCommits(mapped);
     })
@@ -57,6 +77,11 @@ function checkRepo() {
 }
 
 function checkCommits(commits) {
+
+  if(!commits || commits.length === 0) {
+    return;
+  }
+
   var promises = [];
   for (let i = 0; i < commits.length; i++) {
     promises.push(getDiffStat(commits[i]));
@@ -111,12 +136,21 @@ function showDiff(hash) {
     });
 }
 
-function mapCommits(data) {
-  let comparedDate = moment();
+function filterCommits(data) {
+  let comparedDate = config.commitsFilterDate === 'TODAY' ? moment() : moment(config.commitsFilterDate);
+
+  if (!comparedDate.isValid) {
+    console.log('env.COMMITS_FILTER_DATE is invalid');
+    return [];
+  }
 
   var filtered = _.filter(data, commit => {
-    // return moment(commit.date).isAfter('2019-01-24', 'day');
-    return moment(commit.date).isSame(comparedDate, 'date');
+
+    if(config.commitsFilterDate === 'TODAY') {
+      return moment(commit.date).isSame(comparedDate, 'date');
+    }
+    return moment(commit.date).isAfter(comparedDate, 'date');
+    
   });
 
   var arr = _.map(filtered, commit => {
@@ -211,7 +245,7 @@ async function sendEmail(body) {
   let mailOptions = {
     from: `"Bitbucket Notifier" <${config.emailFrom}>`, // sender address
     to: config.emailTo, // list of receivers
-    subject: 'Docurec repo changes', // Subject line
+    subject: `Bitbucket changes for ${config.bbRepoDesc}`, // Subject line
     text: '', // plain text body
     html: body // html body
   };

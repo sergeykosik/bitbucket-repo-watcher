@@ -3,9 +3,13 @@ const dotenv = require('dotenv');
 dotenv.config();
 module.exports = {
   bbRepoUrl: process.env.BITBUCKET_REPO_URL,
+  bbRepoDesc: process.env.BITBUCKET_REPO_DESC,
   bbUser: process.env.BITBUCKET_USER,
   bbPass: process.env.BITBUCKET_PASS,
+  commitPages: process.env.COMMIT_PAGES,
   watchList: process.env.WATCH_LIST.split(','),
+  commitsFilterDate: process.env.COMMITS_FILTER_DATE,
+  scheduleDate: process.env.SCHEDULE_DATE,
   emailProvider: process.env.EMAIL_PROVIDER,
   emailUser: process.env.EMAIL_USER,
   emailPass: process.env.EMAIL_PASS,
