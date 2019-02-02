@@ -242,24 +242,37 @@ function parseScheduleDate(val) {
 /**
  * Start app
  */
-const scheduleDate = parseScheduleDate(config.scheduleDate);
 
-if (_.isEmpty(scheduleDate)) {
-  throw new Error('Error -> Scheduler Date is Emtpy.');
-}
-
-console.log(`Scheduled for ${config.scheduleDate}`);
-console.log('Watch list', config.watchList);
-
-// https://stackoverflow.com/questions/4018154/how-do-i-run-a-node-js-app-as-a-background-service
-
-schedule.scheduleJob(scheduleDate, () => {
-  checkRepo();
+// Check the command arguments for "-now"
+// to bypass the scheduler
+let isRunNow = false;
+process.argv.forEach((val, index) => {
+  console.log('arg', index, val);
+  if (index === 2 && val === '-now') {
+    isRunNow = true;
+  }
 });
 
+if (isRunNow) {
+  console.log('Bypass scheduler');
+  checkRepo();
+  // showDiff(commitHash);
+  // showDiffStat(commitHash);
+} else {
+  // https://stackoverflow.com/questions/4018154/how-do-i-run-a-node-js-app-as-a-background-service
+  const scheduleDate = parseScheduleDate(config.scheduleDate);
 
-// showDiff(commitHash);
-// showDiffStat(commitHash);
+  if (_.isEmpty(scheduleDate)) {
+    throw new Error('Scheduler Date is Emtpy.');
+  }
+
+  console.log(`Scheduled for ${config.scheduleDate}`);
+  console.log('Watch list', config.watchList);
+
+  schedule.scheduleJob(scheduleDate, () => {
+    checkRepo();
+  });
+}
 
 /* function showDiff(hash) {
   var difReq = rp({ url: diffUrl + hash, method: 'GET', auth: authObj, json: true });

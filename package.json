@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
+    "now": "node index.js -now",
     "install-win-service": "winser -i",
     "uninstall-win-service": "winser -r",
     "lint": "eslint \"**/*.js\""
