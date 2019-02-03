@@ -1,4 +1,4 @@
-# bitbucket-repo-watcher
+# Bitbucket-repo-watcher
 A node.js application that checks periodically a bitbucket repository's the most recent commits for changes of specific files (paths) and send email notifications.
 
 ## How it works
@@ -45,7 +45,7 @@ The `bitbucket-repo-watcher` service is reporting the Windows events. Search The
 
 ### Config Variables 
 
-Variable | Description | Example
+Variable | Description &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Example
 ---|---|---
 BITBUCKET_REPO_URL | Bitbucket url | `BITBUCKET_REPO_URL=https://api.bitbucket.org/2.0/repositories/sergey-kosik/bitbucket-repo-watcher/`
 BITBUCKET_REPO_DESC | Description of the repo will be used as an email's subject line. | `BITBUCKET_REPO_DESC=Bitbucket Repository Watcher`
