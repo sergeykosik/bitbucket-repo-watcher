@@ -28,10 +28,6 @@ function isAnyWachedChanged(paths) {
     }
   });
 
-  if (found) {
-    console.log('isAnyWatchedChanged', found);
-  }
-
   return found;
 }
 
@@ -116,7 +112,7 @@ async function sendEmail(body) {
   // send mail with defined transport object
   const info = await transporter.sendMail(mailOptions);
 
-  console.log('Message sent: %s', info.messageId);
+  console.log('Email sent: %s', info.messageId);
 }
 
 function sendNotification() {
@@ -132,7 +128,7 @@ function sendNotification() {
 
   content += `<h5>Sent by Bitbucket-Repo-Notifier | ${moment().format('LLL')}</h5>`;
 
-  console.log('email content', content);
+  // console.log('email content', content);
 
   sendEmail(content).catch(console.error);
 }
@@ -148,7 +144,7 @@ function checkCommits(commits) {
   }
 
   Promise.all(promises).then(() => {
-    console.log('all completed', changedCommits);
+    console.log('Found Commits:', changedCommits.length);
     sendNotification();
   });
 }
@@ -177,6 +173,8 @@ function filterCommits(data) {
     });
   }
 
+  console.log('Filtered Commits:', filtered.length);
+
   if (filtered.length === 0) {
     return [];
   }
@@ -192,7 +190,6 @@ function filterCommits(data) {
   });
 
   // console.log('commits', arr);
-  // console.log('filtered count', arr.length);
 
   return arr;
 }
@@ -215,8 +212,8 @@ function checkRepo() {
         commits.push(...res[i].values);
       }
 
+      console.log('Retrieved Commits:', commits.length);
       const mapped = filterCommits(commits);
-      console.log('commits num: ', mapped.length);
       checkCommits(mapped);
     })
     .catch((err) => {
@@ -247,11 +244,13 @@ function parseScheduleDate(val) {
 // to bypass the scheduler
 let isRunNow = false;
 process.argv.forEach((val, index) => {
-  console.log('arg', index, val);
+  // console.log('arg', index, val);
   if (index === 2 && val === '-now') {
     isRunNow = true;
   }
 });
+
+console.log('Watch list', config.watchList);
 
 if (isRunNow) {
   console.log('Bypass scheduler');
@@ -259,7 +258,6 @@ if (isRunNow) {
   // showDiff(commitHash);
   // showDiffStat(commitHash);
 } else {
-  // https://stackoverflow.com/questions/4018154/how-do-i-run-a-node-js-app-as-a-background-service
   const scheduleDate = parseScheduleDate(config.scheduleDate);
 
   if (_.isEmpty(scheduleDate)) {
@@ -267,7 +265,6 @@ if (isRunNow) {
   }
 
   console.log(`Scheduled for ${config.scheduleDate}`);
-  console.log('Watch list', config.watchList);
 
   schedule.scheduleJob(scheduleDate, () => {
     checkRepo();

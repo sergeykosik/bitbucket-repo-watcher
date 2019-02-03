@@ -45,9 +45,9 @@ The `bitbucket-repo-watcher` service is reporting the Windows events. Search The
 
 ### Config Variables 
 
-Variable | Description &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; | Example
+Variable | Description | Example
 ---|---|---
-BITBUCKET_REPO_URL | Bitbucket url | `BITBUCKET_REPO_URL=https://api.bitbucket.org/2.0/repositories/sergey-kosik/bitbucket-repo-watcher/`
+BITBUCKET_REPO_URL | Bitbucket repository url, starting with BitBucket API v2 url `https://api.bitbucket.org/2.0/repositories/` | `BITBUCKET_REPO_URL=`<br>`https://api.bitbucket.org/2.0/repositories/`<br>`sergey-kosik/my-repository-name/`
 BITBUCKET_REPO_DESC | Description of the repo will be used as an email's subject line. | `BITBUCKET_REPO_DESC=Bitbucket Repository Watcher`
 BITBUCKET_USER<br>BITBUCKET_PASS | User account credentials, used for Basic HTTP Authentication requests (note account should have 2-factor-auth / 2-step-verification disabled). | `BITBUCKET_USER=sergey-kosik`<br>`BITBUCKET_PASS=pass$$ord`
 COMMIT_PAGES | Number of total paginated requests (30 commits per page). | `COMMIT_PAGES=4`
