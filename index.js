@@ -8,9 +8,10 @@ const config = require('./config');
 
 const commitsUrl = `${config.bbRepoUrl}commits/?page=`;
 const diffStatUrl = `${config.bbRepoUrl}diffstat/`;
-// const diffUrl = `${config.bbRepoUrl}diff/`;
+const diffUrl = `${config.bbRepoUrl}diff/`;
 
 const changedCommits = [];
+const changedCommitDiffs = [];
 
 const authObj = {
   user: config.bbUser,
@@ -18,17 +19,18 @@ const authObj = {
   sendImmediately: true
 };
 
-function isAnyWachedChanged(paths) {
+function getWatchedPaths(paths) {
   let found = false;
+  let watchedPaths = [];
 
   _.each(paths, (path) => {
     found = config.watchList.some(interested => path.indexOf(interested) > -1);
     if (found) {
-      return found;
+      watchedPaths.push(path);
     }
   });
 
-  return found;
+  return watchedPaths;
 }
 
 function getDiffStat(commit) {
@@ -36,7 +38,7 @@ function getDiffStat(commit) {
     url: diffStatUrl + commit.hash, method: 'GET', auth: authObj, json: true
   })
     .then((res) => {
-      const paths = [];
+      const commitPaths = [];
       const diffs = res.values || [];
 
       _.each(diffs, (diff) => {
@@ -44,13 +46,13 @@ function getDiffStat(commit) {
         // either old (modified, deleted);
         // or new (added)
         const changed = diff.old || diff.new;
-        paths.push(changed.path);
+        commitPaths.push(changed.path);
       });
 
-      const isChanged = isAnyWachedChanged(paths);
+      const watchedPaths = getWatchedPaths(commitPaths);
 
-      if (isChanged) {
-        commit.paths = paths;
+      if (watchedPaths.length > 0) {
+        commit.paths = watchedPaths;
         changedCommits.push(commit);
       }
 
@@ -59,6 +61,22 @@ function getDiffStat(commit) {
     .catch((err) => {
       console.log('getDiffStat error', err);
       return this;
+    });
+}
+
+function getDiff(commit) {
+
+  return this;
+  var pathQueryString = commit.paths.map(path => 'path=' + path).join('&');
+  
+  return rp({ url: diffUrl + commit.hash + '?' + pathQueryString, method: 'GET', auth: authObj, json: true })
+    .then(function(res) {
+      // console.log('Diff:', res);
+      commit.diffDetails = res;
+      changedCommitDiffs.push(commit);
+    })
+    .catch(function(err) {
+      console.log('getDiff error', err);
     });
 }
 
@@ -71,6 +89,10 @@ function buildPathsContent(paths) {
   return `<table>${rows}</table>`;
 }
 
+function buildDiffContent(diff) {
+  return `<p>${diff}</p>`;
+}
+
 function buildCommitContent(commit) {
   const content = `
   <b>Commit:</b> ${commit.hash}<br/>
@@ -80,6 +102,8 @@ function buildCommitContent(commit) {
   ${commit.message} <br/><br/>
   <b>Changes:</b><br/>
   ${buildPathsContent(commit.paths)}
+  <br/>
+  ${buildDiffContent(commit.diffDetails)}
   <br/>
   `;
 
@@ -115,13 +139,13 @@ async function sendEmail(body) {
   console.log('Email sent: %s', info.messageId);
 }
 
-function sendNotification() {
-  if (changedCommits.length === 0) {
+function sendNotification(commits) {
+  if (commits.length === 0) {
     return;
   }
 
   let content = '';
-  _.each(changedCommits, (changed) => {
+  _.each(commits, (changed) => {
     content += buildCommitContent(changed);
     content += '<hr>';
   });
@@ -131,6 +155,24 @@ function sendNotification() {
   // console.log('email content', content);
 
   sendEmail(content).catch(console.error);
+}
+
+function collectDiffs(commits) {
+  if (!commits || commits.length === 0) {
+    return;
+  }
+
+  const promises = [];
+  for (let i = 0; i < commits.length; i++) {
+    promises.push(getDiff(commits[i]));
+  }
+
+  Promise.all(promises).then(() => {
+    console.log('Collected diffs for commits:', changedCommitDiffs.length);
+    
+    const coll = changedCommitDiffs.length == 0 ? commits : changedCommitDiffs;
+    sendNotification(coll);
+  });
 }
 
 function checkCommits(commits) {
@@ -145,7 +187,8 @@ function checkCommits(commits) {
 
   Promise.all(promises).then(() => {
     console.log('Found Commits:', changedCommits.length);
-    sendNotification();
+    
+    collectDiffs(changedCommits);
   });
 }
 
@@ -255,8 +298,7 @@ console.log('Watch list', config.watchList);
 if (isRunNow) {
   console.log('Bypass scheduler');
   checkRepo();
-  // showDiff(commitHash);
-  // showDiffStat(commitHash);
+
 } else {
   const scheduleDate = parseScheduleDate(config.scheduleDate);
 
@@ -271,14 +313,3 @@ if (isRunNow) {
   });
 }
 
-/* function showDiff(hash) {
-  var difReq = rp({ url: diffUrl + hash, method: 'GET', auth: authObj, json: true });
-
-  difReq
-    .then(function(res) {
-      console.log('Dif', res);
-    })
-    .catch(function(err) {
-      console.log('showDiff error', err);
-    });
-} */
