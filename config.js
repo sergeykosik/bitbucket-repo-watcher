@@ -12,6 +12,8 @@ module.exports = {
   watchList: process.env.WATCH_LIST.split(','),
   commitsFilterDate: process.env.COMMITS_FILTER_DATE,
   ignoreAuthors: process.env.IGNORE_AUTHORS,
+  ignoreCommits: process.env.IGNORE_COMMITS,
+  ignoreCommitsWithMessages: process.env.IGNORE_COMMITS_WITH_MESSAGES,
   scheduleDate: process.env.SCHEDULE_DATE,
   emailProvider: process.env.EMAIL_PROVIDER,
   emailUser: process.env.EMAIL_USER,

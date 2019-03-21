@@ -90,7 +90,7 @@ function buildPathsContent(paths) {
 }
 
 function buildDiffContent(diff) {
-  return `<p>${diff}</p>`;
+  return `<pre>${diff ? diff : ''}</pre>`;
 }
 
 function buildCommitContent(commit) {
@@ -168,7 +168,7 @@ function collectDiffs(commits) {
   }
 
   Promise.all(promises).then(() => {
-    console.log('Collected diffs for commits:', changedCommitDiffs.length);
+    // console.log('Collected diffs for commits:', changedCommitDiffs.length);
     
     const coll = changedCommitDiffs.length == 0 ? commits : changedCommitDiffs;
     sendNotification(coll);
@@ -216,6 +216,15 @@ function filterCommits(data) {
     });
   }
 
+  const ignoreMessages = config.ignoreCommitsWithMessages ? config.ignoreCommitsWithMessages.split(',') : [];
+
+  if (ignoreMessages.length > 0) {
+    filtered = _.filter(filtered, (commit) => {
+      const commitMessage = commit.message || '';
+      return !ignoreMessages.some(msg => ignoreMessages.indexOf(commitMessage) > -1);
+    });
+  }
+
   console.log('Filtered Commits:', filtered.length);
 
   if (filtered.length === 0) {
@@ -237,13 +246,19 @@ function filterCommits(data) {
   return arr;
 }
 
+function buildExcludeQueryString() {
+  const ignoreCommits = config.ignoreCommits ? config.ignoreCommits.split(',') : [];
+  const excludeQueryParams = ignoreCommits.map(name => 'exclude=' + name).join('&');
+  return excludeQueryParams ? '&' + excludeQueryParams : '';
+}
+
 function checkRepo() {
   const requests = [];
-
+  
   // Make a number of paged requests which would return 30 commits per page
   for (let i = 1; i <= config.commitPages; i++) {
     requests.push(rp({
-      url: `${commitsUrl}${i}`, method: 'GET', auth: authObj, json: true
+      url: `${commitsUrl}${i}${buildExcludeQueryString()}`, method: 'GET', auth: authObj, json: true
     }));
   }
 
