@@ -21,7 +21,7 @@ const authObj = {
 
 function getWatchedPaths(paths) {
   let found = false;
-  let watchedPaths = [];
+  const watchedPaths = [];
 
   _.each(paths, (path) => {
     found = config.watchList.some(interested => path.indexOf(interested) > -1);
@@ -64,18 +64,54 @@ function getDiffStat(commit) {
     });
 }
 
-function getDiff(commit) {
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
-  return this;
-  var pathQueryString = commit.paths.map(path => 'path=' + path).join('&');
-  
-  return rp({ url: diffUrl + commit.hash + '?' + pathQueryString, method: 'GET', auth: authObj, json: true })
-    .then(function(res) {
-      // console.log('Diff:', res);
-      commit.diffDetails = res;
+function parseDiff(content) {
+  const lines = content.split('\n');
+
+  let inlineStyle = '';
+  const styledContent = lines.map((line) => {
+    if (line.startsWith('+')) {
+      inlineStyle = 'style="background-color: #dfd;"';
+    } else if (line.startsWith('-')) {
+      inlineStyle = 'style="background-color: #fee8e9;"';
+    } else if (line.startsWith('diff')) {
+      inlineStyle = 'style="border-top: 1px solid #ccc; margin-top: 10px;"';
+    } else {
+      inlineStyle = '';
+    }
+
+    return `<div ${inlineStyle}>${escapeHtml(line)}</div>`;
+  });
+  // console.log('parseDiff', content, styledContent);
+
+  return styledContent;
+}
+
+function getDiff(commit) {
+  // The query string might exceed the limit
+  // so only requesting few paths.
+  // There might be a need to change the request
+  // in order to load all paths
+  const reducesPath = commit.paths.length > 5 ? commit.paths.slice(0, 6) : commit.paths;
+
+  const pathQueryString = reducesPath.map(path => `path=${path}`).join('&');
+
+  return rp({
+    url: `${diffUrl + commit.hash}?${pathQueryString}`, method: 'GET', auth: authObj, json: true
+  })
+    .then((res) => {
+      commit.diffDetails = parseDiff(res).join('');
       changedCommitDiffs.push(commit);
     })
-    .catch(function(err) {
+    .catch((err) => {
       console.log('getDiff error', err);
     });
 }
@@ -90,7 +126,7 @@ function buildPathsContent(paths) {
 }
 
 function buildDiffContent(diff) {
-  return `<pre>${diff ? diff : ''}</pre>`;
+  return `<pre>${diff || ''}</pre>`;
 }
 
 function buildCommitContent(commit) {
@@ -103,7 +139,9 @@ function buildCommitContent(commit) {
   <b>Changes:</b><br/>
   ${buildPathsContent(commit.paths)}
   <br/>
+  <div style="background-color: #f9f9f9">
   ${buildDiffContent(commit.diffDetails)}
+  </div>
   <br/>
   `;
 
@@ -168,10 +206,7 @@ function collectDiffs(commits) {
   }
 
   Promise.all(promises).then(() => {
-    // console.log('Collected diffs for commits:', changedCommitDiffs.length);
-    
-    const coll = changedCommitDiffs.length == 0 ? commits : changedCommitDiffs;
-    sendNotification(coll);
+    sendNotification(changedCommitDiffs);
   });
 }
 
@@ -187,7 +222,7 @@ function checkCommits(commits) {
 
   Promise.all(promises).then(() => {
     console.log('Found Commits:', changedCommits.length);
-    
+
     collectDiffs(changedCommits);
   });
 }
@@ -221,7 +256,7 @@ function filterCommits(data) {
   if (ignoreMessages.length > 0) {
     filtered = _.filter(filtered, (commit) => {
       const commitMessage = commit.message || '';
-      return !ignoreMessages.some(msg => ignoreMessages.indexOf(commitMessage) > -1);
+      return ignoreMessages.indexOf(commitMessage) === -1;
     });
   }
 
@@ -248,13 +283,13 @@ function filterCommits(data) {
 
 function buildExcludeQueryString() {
   const ignoreCommits = config.ignoreCommits ? config.ignoreCommits.split(',') : [];
-  const excludeQueryParams = ignoreCommits.map(name => 'exclude=' + name).join('&');
-  return excludeQueryParams ? '&' + excludeQueryParams : '';
+  const excludeQueryParams = ignoreCommits.map(name => `exclude=${name}`).join('&');
+  return excludeQueryParams ? `&${excludeQueryParams}` : '';
 }
 
 function checkRepo() {
   const requests = [];
-  
+
   // Make a number of paged requests which would return 30 commits per page
   for (let i = 1; i <= config.commitPages; i++) {
     requests.push(rp({
@@ -313,7 +348,6 @@ console.log('Watch list', config.watchList);
 if (isRunNow) {
   console.log('Bypass scheduler');
   checkRepo();
-
 } else {
   const scheduleDate = parseScheduleDate(config.scheduleDate);
 
@@ -327,4 +361,3 @@ if (isRunNow) {
     checkRepo();
   });
 }
-
