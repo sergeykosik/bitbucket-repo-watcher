@@ -252,7 +252,7 @@ function filterCommits(data) {
     });
   }
 
-  const ignoreMessages = config.ignoreCommitsWithMessages ? config.ignoreCommitsWithMessages.split(',') : [];
+  const ignoreMessages = config.ignoreMessages ? config.ignoreMessages.split(',') : [];
 
   if (ignoreMessages.length > 0) {
     filtered = _.filter(filtered, (commit) => {
@@ -283,7 +283,7 @@ function filterCommits(data) {
 }
 
 function buildExcludeQueryString() {
-  const ignoreCommits = config.ignoreCommits ? config.ignoreCommits.split(',') : [];
+  const ignoreCommits = config.ignoreBranches ? config.ignoreBranches.split(',') : [];
   const excludeQueryParams = ignoreCommits.map(name => `exclude=${name}`).join('&');
   return excludeQueryParams ? `&${excludeQueryParams}` : '';
 }

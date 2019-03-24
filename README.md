@@ -1,6 +1,10 @@
 # Bitbucket-repo-watcher
 A node.js application that checks periodically a bitbucket repository's the most recent commits for changes of specific files (paths) and send email notifications.
 
+Example of received email:
+
+![alt text](./email_example.png)
+
 ## How it works
 
 BitBucket-repo-watcher is using [BitBucket API v2](https://developer.atlassian.com/bitbucket/api/2/reference/) to browse a reporisoty and retrieve the most recent commits.
@@ -47,7 +51,8 @@ The `bitbucket-repo-watcher` service is reporting the Windows events. Search The
 
 Variable | Description | Example
 ---|---|---
-BITBUCKET_REPO_URL | Bitbucket repository url, starting with BitBucket API v2 url `https://api.bitbucket.org/2.0/repositories/` | `BITBUCKET_REPO_URL=`<br>`https://api.bitbucket.org/2.0/repositories/`<br>`sergey-kosik/my-repository-name/`
+BITBUCKET_REPO_WEB_URL | Bitbucket repository url that can be accessed from the web browser. It will be used to create a link for commit details. | `BITBUCKET_REPO_WEB_URL=`<br>`https://bitbucket.org/sergey-kosik/my-repository-name/`
+BITBUCKET_REPO_API_URL | Bitbucket repository url, starting with BitBucket API v2 url `https://api.bitbucket.org/2.0/repositories/` | `BITBUCKET_REPO_API_URL=`<br>`https://api.bitbucket.org/2.0/repositories/`<br>`sergey-kosik/my-repository-name/`
 BITBUCKET_REPO_DESC | Description of the repo will be used as an email's subject line. | `BITBUCKET_REPO_DESC=Bitbucket Repository Watcher`
 BITBUCKET_USER<br>BITBUCKET_PASS | User account credentials, used for Basic HTTP Authentication requests (note account should have 2-factor-auth / 2-step-verification disabled). | `BITBUCKET_USER=sergey-kosik`<br>`BITBUCKET_PASS=pass$$ord`
 COMMIT_PAGES | Number of total paginated requests (30 commits per page). | `COMMIT_PAGES=4`
@@ -57,6 +62,8 @@ EMAIL_FROM | Email from. This can be the same as EMAIL_USER, in case of Gmail pr
 EMAIL_TO | Recipient email address. | `EMAIL_TO=sergey.kosik@example.com`
 COMMITS_FILTER_DATE | A target date for which commits to be checked.<br>Can be either `TODAY` or a specific date in the form `YYYY-MM-DD`.<br>If `TODAY` then only commits created today will be checked.<br>In case of a specific date - only commits on the same date and after will be checked.  | To check today commits, set `COMMITS_FILTER_DATE=TODAY`.<br>To check commits from specific date set  `COMMITS_FILTER_DATE=2019-01-23`
 IGNORE_AUTHORS | If set, then the commits of those authors will be ignored. Can be used to filter out own commits. | To ignore my own commits where my name can be in two forms (as I might commit from two different machines) set `IGNORE_AUTHORS=Sergey Kosik,sergey.kosik`
+IGNORE_BRANCHES | If set, then the commits for the specified branches will be ignored. | To ignore the commits for "master" and "default" branches set `IGNORE_BRANCHES=master,default`
+IGNORE_MESSAGES | If set, then the commits with the specified messages will be ignored. | To ignore the commits with messages "Merge with master" and "Merge with default" set `IGNORE_MESSAGES=Merge with master,Merge with default`
 SCHEDULE_DATE | The date of the scheduler recurrence, e.g. when the app will query the repo. The value should be a comma-separated RecurrenceRule properties:<br>second (0-59)<br>minute (0-59)<br>hour (0-23)<br>date (1-31)<br>month (0-11)<br>year<br>dayOfWeek (0-6) Starting with Sunday<br>(see [Node Schedule](https://www.npmjs.com/package/node-schedule) documentation) | To query the repo every day at 21.10 set `SCHEDULE_DATE=hour:21,minute:10`
 WATCH_LIST | The comma-separated list of paths the app will check within the retrieved commits. The .env file is not able to handle multi-line variable, so the value should be in one line. | For example, to watch all files in one folder and only one file in the other folder,<br>set  `WATCH_LIST=MyProject.Folder1,MyProject.Folder2/my-file1.js`
 
