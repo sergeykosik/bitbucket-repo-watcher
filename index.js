@@ -6,9 +6,10 @@ const nodemailer = require('nodemailer');
 const schedule = require('node-schedule');
 const config = require('./config');
 
-const commitsUrl = `${config.bbRepoUrl}commits/?page=`;
-const diffStatUrl = `${config.bbRepoUrl}diffstat/`;
-const diffUrl = `${config.bbRepoUrl}diff/`;
+const commitWebUrl = `${config.bbRepoWebUrl}commits`;
+const commitsUrl = `${config.bbRepoApiUrl}commits/?page=`;
+const diffStatUrl = `${config.bbRepoApiUrl}diffstat/`;
+const diffUrl = `${config.bbRepoApiUrl}diff/`;
 
 const changedCommits = [];
 const changedCommitDiffs = [];
@@ -131,7 +132,7 @@ function buildDiffContent(diff) {
 
 function buildCommitContent(commit) {
   const content = `
-  <b>Commit:</b> ${commit.hash}<br/>
+  <b>Commit:</b> <a href="${commitWebUrl}/${commit.hash}" target="_blank">${commit.hash}</a><br/>
   <b>Author:</b> ${commit.author}<br/>
   <b>Date:</b> ${commit.date}<br/>
   <b>Message:</b><br/>

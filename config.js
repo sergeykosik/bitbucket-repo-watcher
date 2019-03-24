@@ -4,7 +4,8 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 module.exports = {
-  bbRepoUrl: process.env.BITBUCKET_REPO_URL,
+  bbRepoWebUrl: process.env.BITBUCKET_REPO_WEB_URL,
+  bbRepoApiUrl: process.env.BITBUCKET_REPO_API_URL,
   bbRepoDesc: process.env.BITBUCKET_REPO_DESC,
   bbUser: process.env.BITBUCKET_USER,
   bbPass: process.env.BITBUCKET_PASS,
