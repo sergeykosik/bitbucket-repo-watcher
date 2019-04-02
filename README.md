@@ -32,12 +32,20 @@ BitBucket-repo-watcher can be run as a Windows Service using [WinSer](https://ww
 ## How to install as a Windows service
 
 1. Ensure the correct config is in place
-2. `$ npm run install-win-service`
-3. Run services.msc to open the Services Manager 
-4. Start the `bitbucket-repo-watcher` service (this will keep the app running, which will query the repo at the specified date/time)
+2. The recommended way to install node-windows is with npm, using the global flag:
+3. `$ npm install -g node-windows`
+4. Then, in your project root, run:
+5. `npm link node-windows`
+6. Then install the win service, run:
+7. `npm run install-win-service`
+
+## How to uninstall
+
+1. Run the following, which will uninstall the already instaled win service
+2. `npm run uninstall-win-service`
 
 #### Note: 
-The `bitbucket-repo-watcher` service is reporting the Windows events. Search The Windows Event Viewer for "nssm".
+The `bitbucket-repo-watcher` service is reporting the Windows events. Search The Windows Event Viewer for "BitBucket Repo Watcher".
 
 ## How to configure email notifications with Gmail
 
