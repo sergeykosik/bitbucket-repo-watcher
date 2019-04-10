@@ -7,7 +7,7 @@
     "start": "node index.js",
     "now": "node index.js -now",
     "install-win-service": "node win-service-installer.js",
-    "uninstall-win-service": "node win-service-unistall.js",
+    "uninstall-win-service": "node win-service-uninstall.js",
     "lint": "eslint \"**/*.js\""
   },
   "repository": {
