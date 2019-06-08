@@ -4,6 +4,7 @@ const Promise = require('bluebird');
 const rp = require('request-promise');
 const nodemailer = require('nodemailer');
 const schedule = require('node-schedule');
+const logger = require('./logger');
 const config = require('./config');
 
 const commitWebUrl = `${config.bbRepoWebUrl}commits`;
@@ -13,6 +14,8 @@ const diffUrl = `${config.bbRepoApiUrl}diff/`;
 
 const changedCommits = [];
 const changedCommitDiffs = [];
+
+let isRunNow = false;
 
 const authObj = {
   user: config.bbUser,
@@ -60,7 +63,7 @@ function getDiffStat(commit) {
       return this;
     })
     .catch((err) => {
-      console.log('getDiffStat error', err);
+      logger.logError('getDiffStat error', err);
       return this;
     });
 }
@@ -113,7 +116,7 @@ function getDiff(commit) {
       changedCommitDiffs.push(commit);
     })
     .catch((err) => {
-      console.log('getDiff error', err);
+      logger.logError('getDiff error', err);
     });
 }
 
@@ -175,7 +178,7 @@ async function sendEmail(body) {
   // send mail with defined transport object
   const info = await transporter.sendMail(mailOptions);
 
-  console.log('Email sent: %s', info.messageId);
+  logger.logInfo('Email sent: %s', info.messageId);
 }
 
 function sendNotification(commits) {
@@ -222,7 +225,7 @@ function checkCommits(commits) {
   }
 
   Promise.all(promises).then(() => {
-    console.log('Found Commits:', changedCommits.length);
+    logger.logInfo('Found Commits: ', changedCommits.length);
 
     collectDiffs(changedCommits);
   });
@@ -232,7 +235,7 @@ function filterCommits(data) {
   const comparedDate = config.commitsFilterDate === 'TODAY' ? moment() : moment(config.commitsFilterDate);
 
   if (!comparedDate.isValid) {
-    console.log('env.COMMITS_FILTER_DATE is invalid');
+    logger.logError('env.COMMITS_FILTER_DATE is invalid');
     return [];
   }
 
@@ -261,7 +264,7 @@ function filterCommits(data) {
     });
   }
 
-  console.log('Filtered Commits:', filtered.length);
+  logger.logInfo('Filtered Commits:', filtered.length);
 
   if (filtered.length === 0) {
     return [];
@@ -289,6 +292,10 @@ function buildExcludeQueryString() {
 }
 
 function checkRepo() {
+  // reset
+  changedCommits.length = 0;
+  changedCommitDiffs.length = 0;
+
   const requests = [];
 
   // Make a number of paged requests which would return 30 commits per page
@@ -306,18 +313,18 @@ function checkRepo() {
         commits.push(...res[i].values);
       }
 
-      console.log('Retrieved Commits:', commits.length);
+      logger.logInfo('Retrieved Commits: ', commits.length);
       const mapped = filterCommits(commits);
       checkCommits(mapped);
     })
     .catch((err) => {
-      console.log('Get commits failed', err);
+      logger.logError('Get commits failed', err);
     });
 }
 
 function parseScheduleDate(val) {
   if (!val) {
-    console.log('parseScheduleDate value is empty');
+    logger.logError('parseScheduleDate value is empty');
     return null;
   }
 
@@ -336,27 +343,27 @@ function parseScheduleDate(val) {
 
 // Check the command arguments for "-now"
 // to bypass the scheduler
-let isRunNow = false;
 process.argv.forEach((val, index) => {
   // console.log('arg', index, val);
   if (index === 2 && val === '-now') {
     isRunNow = true;
   }
+  logger.setRunNow(isRunNow);
 });
 
-console.log('Watch list', config.watchList);
+logger.logInfo('Watch list: ', config.watchList.join(','));
 
 if (isRunNow) {
-  console.log('Bypass scheduler');
+  logger.logInfo('Bypass scheduler');
   checkRepo();
 } else {
   const scheduleDate = parseScheduleDate(config.scheduleDate);
 
   if (_.isEmpty(scheduleDate)) {
-    throw new Error('Scheduler Date is Emtpy.');
+    logger.logError('Scheduler Date is Emtpy.');
   }
 
-  console.log(`Scheduled for ${config.scheduleDate}`);
+  logger.logInfo(`Scheduled for ${config.scheduleDate}`);
 
   schedule.scheduleJob(scheduleDate, () => {
     checkRepo();

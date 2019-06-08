@@ -6,10 +6,10 @@
   "scripts": {
     "start": "node index.js",
     "now": "node index.js -now",
-    "install-win-service": "winser -i",
-    "uninstall-win-service": "winser -r",
     "lint": "eslint \"**/*.js\"",
-    "test": "jasmine-node spec/ --forceexit"
+    "test": "jasmine-node spec/ --forceexit",
+    "install-win-service": "node win-service-installer.js",
+    "uninstall-win-service": "node win-service-uninstall.js"
   },
   "repository": {
     "type": "git",
@@ -35,8 +35,7 @@
     "node-schedule": "^1.3.1",
     "nodemailer": "^5.1.1",
     "request": "^2.88.0",
-    "request-promise": "^4.2.2",
-    "winser": "^1.0.3"
+    "request-promise": "^4.2.2"
   },
   "devDependencies": {
     "chai": "^4.2.0",
