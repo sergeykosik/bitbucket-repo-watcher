@@ -8,7 +8,8 @@
     "now": "node index.js -now",
     "install-win-service": "winser -i",
     "uninstall-win-service": "winser -r",
-    "lint": "eslint \"**/*.js\""
+    "lint": "eslint \"**/*.js\"",
+    "test": "jasmine-node spec/ --forceexit"
   },
   "repository": {
     "type": "git",
@@ -43,6 +44,7 @@
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-chai-friendly": "^0.4.1",
     "eslint-plugin-import": "^2.15.0",
+    "jasmine-node": "^3.0.0",
     "mocha": "^5.2.0"
   },
   "engines": {

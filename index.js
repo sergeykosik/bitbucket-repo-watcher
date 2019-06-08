@@ -362,3 +362,5 @@ if (isRunNow) {
     checkRepo();
   });
 }
+
+module.exports.parseScheduleDate = parseScheduleDate;
