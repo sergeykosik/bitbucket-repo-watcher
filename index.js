@@ -260,7 +260,9 @@ function filterCommits(data) {
   if (ignoreMessages.length > 0) {
     filtered = _.filter(filtered, (commit) => {
       const commitMessage = commit.message || '';
-      return ignoreMessages.indexOf(commitMessage) === -1;
+      
+      // https://stackoverflow.com/questions/37428338/check-if-a-string-contains-any-element-of-an-array-in-javascript
+      return !ignoreMessages.some(msg => commitMessage.includes(msg))
     });
   }
 

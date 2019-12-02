@@ -8,8 +8,8 @@
     "now": "node index.js -now",
     "lint": "eslint \"**/*.js\"",
     "test": "jasmine-node spec/ --forceexit",
-    "install-win-service": "node win-service-installer.js",
-    "uninstall-win-service": "node win-service-uninstall.js"
+    "install": "node win-service-installer.js",
+    "uninstall": "node win-service-uninstall.js"
   },
   "repository": {
     "type": "git",
