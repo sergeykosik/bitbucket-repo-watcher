@@ -12,9 +12,6 @@ const commitsUrl = `${config.bbRepoApiUrl}commits/?page=`;
 const diffStatUrl = `${config.bbRepoApiUrl}diffstat/`;
 const diffUrl = `${config.bbRepoApiUrl}diff/`;
 
-const changedCommits = [];
-const changedCommitDiffs = [];
-
 let isRunNow = false;
 
 const authObj = {
@@ -57,14 +54,14 @@ function getDiffStat(commit) {
 
       if (watchedPaths.length > 0) {
         commit.paths = watchedPaths;
-        changedCommits.push(commit);
+        return commit;
       }
 
-      return this;
+      return {};
     })
     .catch((err) => {
       logger.logError('getDiffStat error', err);
-      return this;
+      return {};
     });
 }
 
@@ -113,10 +110,11 @@ function getDiff(commit) {
   })
     .then((res) => {
       commit.diffDetails = parseDiff(res).join('');
-      changedCommitDiffs.push(commit);
+      return commit;
     })
     .catch((err) => {
       logger.logError('getDiff error', err);
+      return {};
     });
 }
 
@@ -209,7 +207,13 @@ function collectDiffs(commits) {
     promises.push(getDiff(commits[i]));
   }
 
-  Promise.all(promises).then(() => {
+  Promise.all(promises).then((res) => {
+    const changedCommitDiffs = [];
+
+    for (let i = 0; i < res.length; i++) {
+      changedCommitDiffs.push(res[i]);
+    }
+
     sendNotification(changedCommitDiffs);
   });
 }
@@ -224,7 +228,16 @@ function checkCommits(commits) {
     promises.push(getDiffStat(commits[i]));
   }
 
-  Promise.all(promises).then(() => {
+  Promise.all(promises).then((res) => {
+    const changedCommits = [];
+
+    for (let i = 0; i < res.length; i++) {
+      // could be empty objects, so check for any property
+      if (res[i].hash) {
+        changedCommits.push(res[i]);
+      }
+    }
+
     logger.logInfo('Found Commits: ', changedCommits.length);
 
     collectDiffs(changedCommits);
@@ -294,10 +307,6 @@ function buildExcludeQueryString() {
 }
 
 function checkRepo() {
-  // reset
-  changedCommits.length = 0;
-  changedCommitDiffs.length = 0;
-
   const requests = [];
 
   // Make a number of paged requests which would return 30 commits per page
