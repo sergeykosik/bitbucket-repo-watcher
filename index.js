@@ -245,7 +245,12 @@ function checkCommits(commits) {
 }
 
 function filterCommits(data) {
-  const comparedDate = config.commitsFilterDate === 'TODAY' ? moment() : moment(config.commitsFilterDate);
+
+  const comparedDate = config.commitsFilterDate === 'TODAY'
+    ? moment()
+    : config.commitsFilterDate === 'YESTERDAY'
+    ? moment().subtract(1, 'days')
+    : moment(config.commitsFilterDate);
 
   if (!comparedDate.isValid) {
     logger.logError('env.COMMITS_FILTER_DATE is invalid');
@@ -273,7 +278,7 @@ function filterCommits(data) {
   if (ignoreMessages.length > 0) {
     filtered = _.filter(filtered, (commit) => {
       const commitMessage = commit.message || '';
-      
+
       // https://stackoverflow.com/questions/37428338/check-if-a-string-contains-any-element-of-an-array-in-javascript
       return !ignoreMessages.some(msg => commitMessage.includes(msg))
     });
