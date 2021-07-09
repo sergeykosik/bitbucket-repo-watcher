@@ -1,4 +1,6 @@
 # Bitbucket-repo-watcher
+[![Open in Visual Studio Code](https://open.vscode.dev/badges/open-in-vscode.svg)](https://open.vscode.dev/havrl/bitbucket-repo-watcher)
+
 A node.js application that checks periodically a bitbucket repository's the most recent commits for changes of specific files (paths) and send email notifications. The corresponding blog post about this can be found [here](https://havrl.blogspot.com/2019/02/watch-files-for-changes-in-bitbucket.html).
 
 Example of received email:
